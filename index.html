@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 员工及数字化 H1 产品总结</title>
+  <style>
+    :root { --ink:#18232d; --muted:#5c6b76; --line:#d7e5ee; --bg:#f3f8fb; --paper:#fff; --blue:#176f9f; --blue-soft:#e8f6fb; --red:#9b4b4b; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+    .gate { min-height:100vh; display:grid; place-items:center; padding:28px; background:linear-gradient(rgba(23,111,159,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(23,111,159,.055) 1px,transparent 1px),linear-gradient(135deg,#fafdff 0%,#eef8fc 56%,#e8f6fb 100%); background-size:38px 38px,38px 38px,auto; }
+    .panel { width:min(520px,100%); background:rgba(255,255,255,.88); border:1px solid #bfdfea; padding:28px; box-shadow:0 24px 60px rgba(27,102,138,.14); }
+    .eyebrow { color:var(--blue); font-size:12px; font-weight:760; letter-spacing:.08em; margin-bottom:10px; }
+    h1 { margin:0; font-size:30px; line-height:1.18; letter-spacing:0; }
+    .desc { margin:14px 0 22px; color:var(--muted); }
+    label { display:block; color:#314b5b; font-weight:700; margin-bottom:8px; }
+    .row { display:flex; gap:10px; }
+    input { flex:1; height:42px; border:1px solid #bfd7e6; padding:0 12px; font:inherit; background:#fff; outline:none; }
+    input:focus { border-color:#79c9e3; box-shadow:0 0 0 3px rgba(121,201,227,.22); }
+    button { height:42px; border:1px solid #176f9f; background:#176f9f; color:#fff; padding:0 16px; font:inherit; font-weight:760; cursor:pointer; }
+    button.secondary { background:#fff; color:var(--blue); }
+    .msg { min-height:22px; margin-top:12px; color:var(--red); font-weight:650; }
+    .app { display:none; min-height:100vh; }
+    .topbar { position:sticky; top:0; z-index:20; display:flex; justify-content:space-between; gap:18px; align-items:center; padding:12px 20px; border-bottom:1px solid #bfd7e6; background:rgba(251,253,254,.96); box-shadow:0 10px 28px rgba(18,50,71,.08); backdrop-filter:blur(12px); }
+    .brand strong { display:block; line-height:1.2; }
+    .brand span { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .tab { height:32px; border:1px solid #cfe1ee; background:#fff; color:#4f6271; padding:0 10px; font-size:12px; }
+    .tab.active { background:var(--blue-soft); color:var(--blue); border-color:#9fcfde; }
+    .viewer { width:100%; height:calc(100vh - 58px); border:0; display:block; background:#fff; }
+    .hint { color:var(--muted); font-size:12px; margin-top:12px; }
+    @media (max-width:700px) { .topbar { align-items:flex-start; flex-direction:column; } .viewer { height:calc(100vh - 120px); } .row { flex-direction:column; } button { width:100%; } }
+  </style>
+</head>
+<body>
+  <main class="gate" id="gate">
+    <section class="panel">
+      <div class="eyebrow">2026 H1 PRODUCT SUMMARY</div>
+      <h1>AI 员工及数字化 H1 产品总结</h1>
+      <p class="desc">该页面为加密发布版。请输入访问密码后查看主总结、数字化业务复盘和绩效参考页。</p>
+      <form id="unlockForm">
+        <label for="password">访问密码</label>
+        <div class="row">
+          <input id="password" name="password" type="password" autocomplete="current-password" autofocus>
+          <button type="submit">解锁</button>
+        </div>
+        <div class="msg" id="message"></div>
+      </form>
+      <p class="hint">提示：密码只在当前浏览器内用于解密，不会发送到服务器。</p>
+    </section>
+  </main>
+
+  <main class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <strong>AI 员工及数字化 H1 产品总结</strong>
+        <span>加密发布版 · GitHub Pages</span>
+      </div>
+      <nav class="tabs" id="tabs" aria-label="页面切换"></nav>
+    </header>
+    <iframe class="viewer" id="viewer" title="H1 产品总结"></iframe>
+  </main>
+
+  <script src="payload.js"></script>
+  <script>
+    const site = window.ENCRYPTED_SITE;
+    const state = { pages: new Map(), current: null };
+    const form = document.getElementById('unlockForm');
+    const message = document.getElementById('message');
+    const gate = document.getElementById('gate');
+    const app = document.getElementById('app');
+    const tabs = document.getElementById('tabs');
+    const viewer = document.getElementById('viewer');
+
+    function b64ToBytes(value) {
+      return Uint8Array.from(atob(value), char => char.charCodeAt(0));
+    }
+
+    async function deriveKey(password) {
+      const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64ToBytes(site.kdf.salt), iterations: site.kdf.iterations, hash: site.kdf.hash }, material, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    }
+
+    async function decryptPage(key, page) {
+      const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(page.iv), additionalData: new TextEncoder().encode(page.id) }, key, b64ToBytes(page.data));
+      return new TextDecoder().decode(plain);
+    }
+
+    function withLinkBridge(html) {
+      const bridge = `<script>document.addEventListener('click',function(event){var a=event.target.closest&&event.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href');if(/2026-H1-.*\\.html(?:#.*)?$/.test(href)){event.preventDefault();parent.postMessage({type:'open-page',href:href},'*');}});<\/script>`;
+      return html.includes('</body>') ? html.replace('</body>', bridge + '</body>') : html + bridge;
+    }
+
+    function renderTabs() {
+      tabs.innerHTML = '';
+      for (const page of site.pages) {
+        const button = document.createElement('button');
+        button.className = 'tab' + (page.id === state.current ? ' active' : '');
+        button.textContent = page.title;
+        button.addEventListener('click', () => showPage(page.id));
+        tabs.appendChild(button);
+      }
+    }
+
+    function showPage(id) {
+      const html = state.pages.get(id);
+      if (!html) return;
+      state.current = id;
+      renderTabs();
+      viewer.srcdoc = withLinkBridge(html);
+    }
+
+    window.addEventListener('message', event => {
+      if (!event.data || event.data.type !== 'open-page') return;
+      const href = event.data.href.split('#')[0].split('/').pop();
+      const target = site.pages.find(page => page.filename === href);
+      if (target) showPage(target.id);
+    });
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      message.style.color = '#5c6b76';
+      message.textContent = '正在解密...';
+      try {
+        const key = await deriveKey(document.getElementById('password').value);
+        const decrypted = await Promise.all(site.pages.map(async page => [page.id, await decryptPage(key, page)]));
+        state.pages = new Map(decrypted);
+        gate.style.display = 'none';
+        app.style.display = 'block';
+        showPage(site.pages[0].id);
+      } catch (error) {
+        message.style.color = '#9b4b4b';
+        message.textContent = '密码不正确，或当前浏览器不支持 Web Crypto 解密。';
+      }
+    });
+  </script>
+</body>
+</html>
